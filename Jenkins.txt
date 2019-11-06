@@ -121,3 +121,13 @@ hudson.model.ManageJenkinsAction
 useful
 
 hudson.model.PageDecorator
+
+---
+build
+
+hudson.model.Build
+hudson.model.BuildAuthorizationToken
+hudson.model.BuildAuthorizationToken.ConverterImpl
+hudson.model.BuildStepListener
+hudson.model.BuildTimelineWidget
+hudson.model.BuildVariableContributor
