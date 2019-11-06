@@ -131,3 +131,14 @@ hudson.model.BuildAuthorizationToken.ConverterImpl
 hudson.model.BuildStepListener
 hudson.model.BuildTimelineWidget
 hudson.model.BuildVariableContributor
+
+---
+executor
+
+hudson.model.Exector
+hudson.model.oneoffexecutor
+
+---
+queue
+
+hudson.model.queue.WorkUnit
