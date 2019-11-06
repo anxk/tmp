@@ -142,3 +142,15 @@ hudson.model.oneoffexecutor
 queue
 
 hudson.model.queue.WorkUnit
+
+
+---
+restart
+
+hudson.model.RestartListener
+hudson.model.RestartListener.Default
+
+---
+rss
+
+hudson.model.RSS
