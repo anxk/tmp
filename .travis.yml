@@ -1,0 +1,16 @@
+---
+jobs:
+  include:
+    - stage: archive docker images
+      script: sh -x archive_images.sh docker_images_list
+      # only do this stage when the commit message contains word archive
+      if: |
+        commit_message =~ /archive/
+      deploy:
+        provider: releases
+        api_key: "${GITHUB_OAUTH_TOKEN}"
+        file_glob: true
+        file: ./TTT*
+        skip_cleanup: true
+        draft: true
+        
