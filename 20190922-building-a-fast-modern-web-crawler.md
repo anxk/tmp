@@ -27,11 +27,11 @@
 
 * 表层网或者透明网是我们每天浏览的那部分网络，它被 Google，Qwant，Duckduckgo 等流行的网络爬虫编入索引。
 * 深网是未经索引的网络的一部分，这意味着您无法通过搜索引擎来找到其中的网站，但是却可以通过 URL 或者 IP 地址来访问它们。
-* 暗网是未经索引的网络的另一部分，访问它需要借助特殊的应用程序或代理，使用常规的浏览器是不行的。例如：最著名的暗网是建立在 Tor 网络上，它可以通过以 .onion 结尾的特殊 URL 来访问。
+* 暗网是未经索引的网络的另一部分，访问它需要借助特殊的应用程序或代理，使用常规的浏览器是办不到的。例如：最著名的暗网是建立在 Tor 网络上，它可以通过以 .onion 结尾的特殊 URL 来访问。
 
 ![Existing web layers](https://creekorful.me/content/images/2019/09/image-1.png)
 
-## Trandoshan 是怎样被设计的？
+## Trandoshan 的设计是怎样的？
 
 ![Big picture of Trandoshan](https://creekorful.me/content/images/2019/09/Trandoshan-1.png)
 
