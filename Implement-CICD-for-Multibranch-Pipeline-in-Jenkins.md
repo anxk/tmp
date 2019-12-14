@@ -1,6 +1,6 @@
 # 基于 Jenkins 多分支流水线 CI/CD 的实现
 
-## 创建具有多个分支的 CI/CD 流水线的指南。
+## 创建具有多个分支的 CI/CD 流水线的指南
 
 ![Making multiple branches with Jenkins.](https://dzone.com/storage/temp/12819412-branch.jpg)
 
