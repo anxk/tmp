@@ -32,7 +32,7 @@ Jenkinsfile 是一个文本文件，被用来定义一个 Jenkins 流水线。�
 
 ## 创建一个简单多分支流水线任务的步骤
 
-1. 点击 Jenkins 主面板左上角的 **New Item** 选项：
+1. 点击 Jenkins 工作台左上角的 **New Item** 选项：
 
 ![New Item](new-item.png)
 
@@ -78,7 +78,7 @@ Jenkinsfile 是一个文本文件，被用来定义一个 Jenkins 流水线。�
 
 16. 将文本框中的 URL 复制出来。
 
-17. 单击 **Save**，返回到 Jenkins 主面板。
+17. 单击 **Save**，返回到 Jenkins 工作台。
 
 18. 打开浏览器，导航到 GitHub 选项卡，然后选择您的 **GitHub** 仓库。
 
