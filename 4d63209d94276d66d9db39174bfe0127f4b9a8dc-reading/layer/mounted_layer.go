@@ -1,0 +1,121 @@
+package layer // import "github.com/docker/docker/layer"
+
+import (
+	"io"
+	"sync"
+
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/containerfs"
+)
+
+// mountedLayer 表示一个 init 层“和”对应的读写层，
+type mountedLayer struct {
+	name       string // <containerId>
+	mountID    string
+	initID     string
+	parent     *roLayer
+	layerStore *layerStore
+
+	sync.Mutex
+	references map[RWLayer]*referencedRWLayer
+}
+
+// cacheParent 返回 initId，如果 initId 为空则返回父镜像层的 cacheId
+func (ml *mountedLayer) cacheParent() string {
+	if ml.initID != "" {
+		return ml.initID
+	}
+	if ml.parent != nil {
+		return ml.parent.cacheID
+	}
+	return ""
+}
+
+func (ml *mountedLayer) TarStream() (io.ReadCloser, error) {
+	return ml.layerStore.driver.Diff(ml.mountID, ml.cacheParent())
+}
+
+// mountedLayer 返回该读写层对应的容器 id
+func (ml *mountedLayer) Name() string {
+	return ml.name
+}
+
+// Parent 返回读写层的父层
+func (ml *mountedLayer) Parent() Layer {
+	if ml.parent != nil {
+		return ml.parent
+	}
+
+	// Return a nil interface instead of an interface wrapping a nil
+	// pointer.
+	// 可参考 https://utcc.utoronto.ca/~cks/space/blog/programming/GoNilNotNil
+	return nil
+}
+
+func (ml *mountedLayer) Size() (int64, error) {
+	return ml.layerStore.driver.DiffSize(ml.mountID, ml.cacheParent())
+}
+
+func (ml *mountedLayer) Changes() ([]archive.Change, error) {
+	return ml.layerStore.driver.Changes(ml.mountID, ml.cacheParent())
+}
+
+func (ml *mountedLayer) Metadata() (map[string]string, error) {
+	return ml.layerStore.driver.GetMetadata(ml.mountID)
+}
+
+func (ml *mountedLayer) getReference() RWLayer {
+	ref := &referencedRWLayer{
+		mountedLayer: ml,
+	}
+	ml.Lock()
+	ml.references[ref] = ref
+	ml.Unlock()
+
+	return ref
+}
+
+func (ml *mountedLayer) hasReferences() bool {
+	ml.Lock()
+	ret := len(ml.references) > 0
+	ml.Unlock()
+
+	return ret
+}
+
+func (ml *mountedLayer) deleteReference(ref RWLayer) error {
+	ml.Lock()
+	defer ml.Unlock()
+	if _, ok := ml.references[ref]; !ok {
+		return ErrLayerNotRetained
+	}
+	delete(ml.references, ref)
+	return nil
+}
+
+func (ml *mountedLayer) retakeReference(r RWLayer) {
+	if ref, ok := r.(*referencedRWLayer); ok {
+		ml.Lock()
+		ml.references[ref] = ref
+		ml.Unlock()
+	}
+}
+
+type referencedRWLayer struct {
+	*mountedLayer
+}
+
+func (rl *referencedRWLayer) Mount(mountLabel string) (containerfs.ContainerFS, error) {
+	return rl.layerStore.driver.Get(rl.mountedLayer.mountID, mountLabel)
+}
+
+// Unmount decrements the activity count and unmounts the underlying layer
+// Callers should only call `Unmount` once per call to `Mount`, even on error.
+func (rl *referencedRWLayer) Unmount() error {
+	return rl.layerStore.driver.Put(rl.mountedLayer.mountID)
+}
+
+// ApplyDiff applies specified diff to the layer
+func (rl *referencedRWLayer) ApplyDiff(diff io.Reader) (int64, error) {
+	return rl.layerStore.driver.ApplyDiff(rl.mountID, rl.cacheParent(), diff)
+}
