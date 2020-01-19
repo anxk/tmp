@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	// 目前 id 的长度都是 64
 	stringIDRegexp      = regexp.MustCompile(`^[a-f0-9]{64}(-init)?$`)
 	supportedAlgorithms = []digest.Algorithm{
 		digest.SHA256,
@@ -48,7 +49,7 @@ var (
 	    - ...
 	  - tmp
 
-* 其中，mounts 中存储的是各个容器的 init 层（只读）和读写层的元数据，sha256 中存储的是镜像层的元数据，tmp 是一个临时目录。
+* 其中，mounts 中存储的是各个容器的 init 层（只读）和读写层的元数据，sha256 中存储的是镜像层的元数据，tmp 是一个临时目录，用于原子写文件。
   对于 mounts/<containerId>中的文件：
 	+ mount-id	保存了读写层的 id，这个 id 是在容器创建时使用 github.com/docker/docker/pkg/stringid 生产的一个随机的长度为 64 的字符串；
 	+ init-id	保存了读写层的 id 加后缀 -init 后的字符串，init 层存在的必要性可参考
@@ -69,7 +70,7 @@ type fileMetadataStore struct {
 
 type fileMetadataTransaction struct {
 	store *fileMetadataStore
-	ws    *ioutils.AtomicWriteSet
+	ws    *ioutils.AtomicWriteSet // 保证文件写的原子性
 }
 
 // newFSMetadataStore returns an instance of a metadata store
@@ -236,6 +237,7 @@ func (fms *fileMetadataStore) GetDiffID(layer ChainID) (DiffID, error) {
 }
 
 // 读取 /var/lib/docker/image/<driver>/layerdb/sha256/<chainId>/cache-id
+// 注意 cache-id 是不可寻址的 id，即随机生成的
 func (fms *fileMetadataStore) GetCacheID(layer ChainID) (string, error) {
 	contentBytes, err := ioutil.ReadFile(fms.getLayerFilename(layer, "cache-id"))
 	if err != nil {
@@ -317,6 +319,7 @@ func (fms *fileMetadataStore) GetMountID(mount string) (string, error) {
 	}
 	content := strings.TrimSpace(string(contentBytes))
 
+	// 写的时候不需要校验，因为是从系统内部输出，可保证一致性，读的时候则需要校验
 	if !stringIDRegexp.MatchString(content) {
 		return "", errors.New("invalid mount id value")
 	}
@@ -360,6 +363,7 @@ func (fms *fileMetadataStore) GetMountParent(mount string) (ChainID, error) {
 	return ChainID(dgst), nil
 }
 
+// 获取孤儿 layer，在 /var/lib/docker/image/<driver>/layerdb/sha256/ 中形如 <chainId>-<random>-removing 的层
 func (fms *fileMetadataStore) getOrphan() ([]roLayer, error) {
 	var orphanLayers []roLayer
 	for _, algorithm := range supportedAlgorithms {
@@ -441,6 +445,7 @@ func (fms *fileMetadataStore) List() ([]ChainID, []string, error) {
 	}
 
 	var mounts []string
+	// 这里是否需要校验一下 cacheId 的格式？？？
 	for _, fi := range fileInfos {
 		if fi.IsDir() {
 			mounts = append(mounts, fi.Name())
@@ -450,6 +455,7 @@ func (fms *fileMetadataStore) List() ([]ChainID, []string, error) {
 	return ids, mounts, nil
 }
 
+// 根据 chainId 和 cacheId 删除 layer 元数据文件夹，即 /var/lib/docker/image/<driver>/layerdb/sha256/<chainId>，这里并没有删除 cache
 // Remove layerdb folder if that is marked for removal
 func (fms *fileMetadataStore) Remove(layer ChainID, cache string) error {
 	dgst := digest.Digest(layer)

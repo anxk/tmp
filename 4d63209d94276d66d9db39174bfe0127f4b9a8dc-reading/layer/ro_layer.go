@@ -8,6 +8,13 @@ import (
 	digest "github.com/opencontainers/go-digest"
 )
 
+/*
+layer 数据存储在 /var/lib/docker/aufs/diff/<cache-id>，
+假如 driver 为 overlay2，那么层数据存放在 /var/lib/docker/overlay2/<cache-id>，
+假如 driver 为 devicemapper，则层数据存放的 device-id 会存储在 
+/var/lib/docker/devicemapper/metadata/<cache-id>中，cache-id 用于定位层数据
+*/
+
 // roLayer 表示一个镜像层
 type roLayer struct {
 	chainID    ChainID
@@ -30,6 +37,7 @@ func (rl *roLayer) TarStream() (io.ReadCloser, error) {
 		return nil, err
 	}
 
+	// 校验数据一致性
 	vrc, err := newVerifiedReadCloser(rc, digest.Digest(rl.diffID))
 	if err != nil {
 		return nil, err
@@ -74,6 +82,7 @@ func (rl *roLayer) Parent() Layer {
 	return rl.parent
 }
 
+// 递归求大小
 func (rl *roLayer) Size() (size int64, err error) {
 	if rl.parent != nil {
 		size, err = rl.parent.Size()
@@ -126,6 +135,7 @@ func (rl *roLayer) depth() int {
 	return rl.parent.depth() + 1
 }
 
+// 存储 layer 的元数据
 func storeLayer(tx *fileMetadataTransaction, layer *roLayer) error {
 	if err := tx.SetDiffID(layer.diffID); err != nil {
 		return err

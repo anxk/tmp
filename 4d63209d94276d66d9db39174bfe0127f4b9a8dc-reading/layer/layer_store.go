@@ -22,6 +22,7 @@ import (
 	"github.com/vbatts/tar-split/tar/storage"
 )
 
+// 镜像层的最大层数
 // maxLayerDepth represents the maximum number of
 // layers which can be chained together. 125 was
 // chosen to account for the 127 max in some

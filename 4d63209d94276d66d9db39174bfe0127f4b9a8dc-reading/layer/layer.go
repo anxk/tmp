@@ -209,6 +209,7 @@ func CreateChainID(dgsts []DiffID) ChainID {
 	return createChainIDFromParent("", dgsts...)
 }
 
+// 递归计算 ChainID，注意这里 slice dgsts 中 index 大的是上层，小的是下层
 func createChainIDFromParent(parent ChainID, dgsts ...DiffID) ChainID {
 	if len(dgsts) == 0 {
 		return parent

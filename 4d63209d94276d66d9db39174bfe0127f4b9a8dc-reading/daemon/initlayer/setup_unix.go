@@ -12,6 +12,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// init 层存在的必要性可参考：
+// https://stackoverflow.com/questions/33697774/init-layer-in-docker
+// http://www.projectatomic.io/docs/filesystems/
+
 // Setup populates a directory with mountpoints suitable
 // for bind-mounting things into the container.
 //
@@ -58,6 +62,7 @@ func Setup(initLayerFs containerfs.ContainerFS, rootIdentity idtools.Identity) e
 					f.Chown(rootIdentity.UID, rootIdentity.GID)
 					f.Close()
 				default:
+					// 建立符号链接 /proc/mounts -> /etc/mtab
 					if err := os.Symlink(typ, filepath.Join(initLayer, pth)); err != nil {
 						return err
 					}

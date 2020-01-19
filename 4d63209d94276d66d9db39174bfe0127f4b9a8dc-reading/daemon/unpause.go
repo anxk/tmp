@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ContainerPause 的相反操作，可参考 ./pause.go
 // ContainerUnpause unpauses a container
 func (daemon *Daemon) ContainerUnpause(name string) error {
 	container, err := daemon.GetContainer(name)
@@ -31,11 +32,12 @@ func (daemon *Daemon) containerUnpause(container *container.Container) error {
 		return fmt.Errorf("Cannot unpause container %s: %s", container.ID, err)
 	}
 
-	container.Paused = false
-	daemon.setStateCounter(container)
-	daemon.updateHealthMonitor(container)
-	daemon.LogContainerEvent(container, "unpause")
+	container.Paused = false // 设置容器状态
+	daemon.setStateCounter(container) // 更新 stateCtr
+	daemon.updateHealthMonitor(container) // 开启健康检查
+	daemon.LogContainerEvent(container, "unpause") // 记录容器 unpause 事件
 
+	// 将容器配置保存到磁盘，并且更新 daemon.containersReplica
 	if err := container.CheckpointTo(daemon.containersReplica); err != nil {
 		logrus.WithError(err).Warn("could not save container to disk")
 	}

@@ -67,6 +67,32 @@ var (
 // syscall. A hard upper limit of 128 lower layers is enforced to ensure
 // that mounts do not fail due to length.
 
+/*
+层的存储位置被初始化为 /var/lib/docker/<driver>，对于 overlayer2 就是 /var/lib/docker/overlay2，
+其目录结构为：
+
+/var/lib/docker/overlay2
+  - <cacheId>
+    - committed
+    - diff
+    - link
+    - lower
+    - merged
+    - work
+  - l
+
+其中 diff 目录中存放当前层的数据；link 文件中保存 /var/lib/docker/overlay2/<cachedId>/diff 目录的符号链接的名字
+（符号链接名字的字符长度小于 cachedId 的长度）；lower 文件中保存所有父层以冒号间隔的 cachedId 的短符号链接名，按照
+从上层到底层的顺序，例如：l/XWNMVFMIUG46QMRCQZEMDOURQG:l/CCCY6DZ3DXJAXJG5PNDUID4D5F；merged 是所有层的挂载点，呈现
+挂载后的文件视图；work 目录是 overlay union fs 工作需要的目录。
+
+l 目录中保存的都是符号链接，每个符号链接指向对应的 /var/lib/docker/overlay2/<cachedId>/diff，符号链接名保存在即文件
+/var/lib/docker/overlay2/<cachedId>/link 中，实际 mount 操作以及 /var/lib/docker/overlay2/<cachedId>/lower 中保
+存的下层使用的都是这样的符号链接。使用符号链接主要是为了减短直接使用 cachedId 带来的不便。
+
+*/
+
+
 const (
 	driverName    = "overlay2"
 	linkDir       = "l"
@@ -116,6 +142,7 @@ var (
 	indexOff string
 )
 
+// 向 graphdriver 注册
 func init() {
 	graphdriver.Register(driverName, Init)
 }
